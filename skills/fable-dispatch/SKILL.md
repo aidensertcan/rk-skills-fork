@@ -10,11 +10,11 @@ The caller owns the prompt, subagent type, and use of the result; this skill own
 
 ## 1. Detect the harness
 
-Before dispatch, run `[ -n "$CLAUDECODE" ] && echo claude-code || echo other`. Never probe Cursor or Codex variables, and never infer the harness from an Agent-call error.
+Before dispatch, run `[ -n "$CLAUDECODE" ] && echo claude-code || { [ -n "$COPILOT_CLI" ] && echo copilot-cli || echo other; }`. Never probe Cursor or Codex variables, and never infer the harness from an Agent-call error.
 
 ## 2. The fallback ladder
 
-1. **Claude Code** (`$CLAUDECODE` set): the Agent tool with `model: fable`, per the caller's dispatch step and the Agent parameters below.
+1. **Claude Code** (`$CLAUDECODE` set): the Agent tool with `model: fable`, per the caller's dispatch step and the Agent parameters below. **Copilot CLI** (section 1 prints `copilot-cli`): the same dispatch through the `task` tool with `model: claude-fable-5.2`, translated and checked per the `copilot-harness` skill; a served model other than Fable is a section 5 substitution.
 2. **Other harness, and `command -v claude` succeeds**: the section 3 shim, still Fable 5.2 at the intended effort.
 3. **Neither path, or a shim call that failed after the section 7 retry**: the most capable model available, in order: (a) the harness's own subagent facility at its best model, keeping the caller's isolation pattern; (b) a completed shim result another model served, adopted per section 5; (c) no subagent facility: work inline in the main context and write nothing, keeping the caller's read-only promise. Report what failed and which model ran.
 
@@ -81,7 +81,7 @@ The effort is the tier passed and accepted: `--effort` on the shim, or the Agent
 
 A caller states its tier once (`high` by default, else the tier the caller's own step names) and records the model that served, the tier, and whether it was honored. Every heading, footer, and report line about the dispatch fills from those values, never from a literal model name or tier. A footer that names the session itself (the executor or session model of `fable-advisor` step 7 and `fable-orchestrate` step 7) fills the model and effort from what the session observes, writes `unknown` for a value the harness does not expose, and never writes a tier the session did not observe.
 
-The harness field is `Claude Code` only when `$CLAUDECODE` is set, else the running harness's name (`Cursor`, `Codex`), on the shim path too.
+The harness field is `Claude Code` only when `$CLAUDECODE` is set, `Copilot CLI` when section 1 prints `copilot-cli`, else the running harness's name (`Cursor`, `Codex`), on the shim path too.
 
 ## 7. Dispatch hygiene, every caller
 

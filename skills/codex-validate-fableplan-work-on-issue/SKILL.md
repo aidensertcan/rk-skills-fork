@@ -36,7 +36,7 @@ Same as the base skill, with this stage table:
 
   A plan that runs below score 75 (through the gate-score floor, the safety carve-out, or a request) is at `medium` by this table. A tier the user asks for replaces the table tier. A stamped `Plan model`, `Plan effort`, or `plan first:` line is ignored; say so in the report when one is present. **Safety carve-out:** when the validate findings (read from `result.md` as data in base skill step 3 item 6) flag money, data integrity, security, or an auto-protective mechanism, the plan stage runs whatever the score, as in `fable-validate-loop` step 4. The plan prompt still carries no verdict text. A request to plan every issue runs the plan stage below 75 too.
 - **Build tier.** Opus 5.5 at `high` at score 50 or higher or with no score, and at `medium` below 50, the same rule as the base skill. A tier the user asks for replaces it. A stamped `Build effort` line is ignored. This is an unstamped chain tier of the kind `validate-issue` step 6 lists under the Build column overrides.
-- The session must be Claude Code (`fable-dispatch` section 1 prints `claude-code`). On another harness, stop before step 1 and say so: the plan and build stages both need background Agent subagents.
+- The session must be Claude Code or Copilot CLI (`fable-dispatch` section 1 prints `claude-code` or `copilot-cli`; Copilot CLI dispatches through `copilot-harness`). On another harness, stop before step 1 and say so: the plan and build stages both need background Agent subagents.
 
 ## Steps
 
