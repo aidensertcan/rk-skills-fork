@@ -55,7 +55,8 @@ rk-skills is written for Claude Code. In Copilot CLI, read every other rk-skills
 - **Branch prefix:** `copilot/`, unless `rk-host context` returns `config.branchPrefix` (for example `feature/copilot-`), which replaces `copilot/` including its slash (`feature/copilot-issue-123-scale-in-pyramiding`). Where a skill writes `cc/` as this session's prefix, use `copilot/` (for example `copilot/issue-123-scale-in-pyramiding`). Where a skill lists the harness prefixes it accepts from earlier runs (`cc/`, `cursor/`, `codex/`), accept `copilot/` too.
 - **Worktree:** `git worktree add <path> -b <branch> <resolved-base>` from the repository root, with the path the skill names for Cursor and Codex (for example `.claude/worktrees/copilot/issue-<N>-<slug>`). Confirm `HEAD` equals the resolved base, and anchor later commands with `git -C <worktree-path>`.
 - **Harness field:** `Copilot CLI`. Where a skill writes `Claude Code` as the harness of this session's own artifacts (footers, PR bodies, plan comments), write `Copilot CLI`. A skill name suffix (for example `| codex-validate-fableplan-work-on-issue`) stays.
-- **Model names in footers and PR title brackets:** the display name of the model that served (section 2 served-model check), for example `Fable 5.2`, `Opus 5.5`, or `Sonnet 5.5`.
+- **Model names in footers and PR title brackets:** the display name of the model that served (section 2 served-model check), without the vendor prefix: `Fable 5.2`, `Opus 5.5`, or `Sonnet 5.5`, never `Claude Sonnet 5.5`.
+- **Effort in footers:** the tier a dispatch passed as `reasoning_effort`. For the session itself, the reasoning effort the session reports; when it reports none, write `unknown`. Never write `default`.
 
 ## 5. Shell on Windows
 
