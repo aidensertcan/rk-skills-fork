@@ -195,6 +195,14 @@ For an Azure DevOps repository, add an entry to `~/.rk-skills/config.json` (or c
   }
 }
 ```
+### Keep a fork in sync with upstream
+
+The Copilot and Azure DevOps support lives in new files (`skills/copilot-harness`, `skills/repo-host`, `tests/`) plus one host line near the top of each skill that runs `gh`, so upstream merges rarely conflict. To sync:
+
+1. `git remote add upstream https://github.com/richkuo/rk-skills.git` (once), then `git fetch upstream` and merge `upstream/main` in a worktree.
+2. Run `bun bin/check-skills.mjs`. It fails when a skill that runs `gh` lacks the host line (copy the `**Host and harness:**` line from any skill under its H1) and when a description passes Copilot CLI's 1024-character limit.
+3. Run `bun tests/rk-host.integration.mjs` with the `RK_TEST_*` variables for the hosts you use.
+4. Review any upstream change to `fable-dispatch` section 1, `fable-validate-fableplan-loop` step 5, the review-loop skills, or `create-release`: those carry Copilot and Azure DevOps edits.
 ## License
 
 MIT, see [LICENSE](./LICENSE).
