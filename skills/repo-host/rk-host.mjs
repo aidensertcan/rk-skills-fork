@@ -360,6 +360,8 @@ function makeAdo(ctx) {
   const { org, project, repo } = ctx.remote
   const base = `https://dev.azure.com/${encodeURIComponent(org)}`
   const proj = `${base}/${encodeURIComponent(project)}`
+  const boardsProject = ctx.config.boardsProject ?? project
+  const wit = `${base}/${encodeURIComponent(boardsProject)}`
   let token
   let repoInfo
   let me
@@ -428,7 +430,7 @@ function makeAdo(ctx) {
   }
   const person = (p) => (p ? { login: p.uniqueName || p.displayName, id: p.id, name: p.displayName } : null)
   const states = async (type) => {
-    if (!stateCache.has(type)) stateCache.set(type, (await api('GET', `${proj}/_apis/wit/workitemtypes/${encodeURIComponent(type)}/states?api-version=7.1`)).value)
+    if (!stateCache.has(type)) stateCache.set(type, (await api('GET', `${wit}/_apis/wit/workitemtypes/${encodeURIComponent(type)}/states?api-version=7.1`)).value)
     return stateCache.get(type)
   }
   const normState = async (type, state) => {
@@ -436,13 +438,13 @@ function makeAdo(ctx) {
     return s && (s.category === 'Completed' || s.category === 'Removed') ? 'CLOSED' : 'OPEN'
   }
   const tags = (value) => (value ? value.split(';').map((t) => t.trim()).filter(Boolean) : [])
-  const wiUrl = (id) => `${proj}/_workitems/edit/${id}`
-  const getWi = (id) => api('GET', `${proj}/_apis/wit/workitems/${id}?$expand=relations&api-version=7.2-preview.3`)
+  const wiUrl = (id) => `${wit}/_workitems/edit/${id}`
+  const getWi = (id) => api('GET', `${wit}/_apis/wit/workitems/${id}?$expand=relations&api-version=7.2-preview.3`)
   const wiComments = async (id) => {
     const out = []
     let token2 = null
     do {
-      const page = await api('GET', `${proj}/_apis/wit/workItems/${id}/comments?api-version=7.2-preview.4${token2 ? `&continuationToken=${encodeURIComponent(token2)}` : ''}`)
+      const page = await api('GET', `${wit}/_apis/wit/workItems/${id}/comments?api-version=7.2-preview.4${token2 ? `&continuationToken=${encodeURIComponent(token2)}` : ''}`)
       for (const c of page.comments) {
         if (c.isDeleted) continue
         out.push({ id: String(c.id), author: person(c.createdBy), ...(await classify(c.createdBy)), body: c.text ?? '', bodyFormat: String(c.format ?? 'html').toLowerCase(), createdAt: c.createdDate, url: `${wiUrl(id)}#${c.id}` })
@@ -451,7 +453,7 @@ function makeAdo(ctx) {
     } while (token2)
     return out
   }
-  const patchWi = (id, ops) => api('PATCH', `${proj}/_apis/wit/workitems/${id}?api-version=7.2-preview.3`, ops, 'application/json-patch+json')
+  const patchWi = (id, ops) => api('PATCH', `${wit}/_apis/wit/workitems/${id}?api-version=7.2-preview.3`, ops, 'application/json-patch+json')
   const prUrl = async (id) => `${proj}/_git/${encodeURIComponent((await getRepo()).name)}/pullrequest/${id}`
   const strip = (ref) => String(ref ?? '').replace(/^refs\/heads\//, '')
   const prStateOf = (status) => ({ active: 'OPEN', completed: 'MERGED', abandoned: 'CLOSED' }[status] ?? String(status).toUpperCase())
@@ -480,11 +482,11 @@ function makeAdo(ctx) {
     if (body !== undefined && body.length > ADO_DESCRIPTION_LIMIT) throw new HostError(`Azure DevOps PR descriptions are limited to ${ADO_DESCRIPTION_LIMIT} characters; this body has ${body.length}. Shorten it or move detail into a PR comment.`, 3)
   }
   const wiql = async (query, limit) => {
-    const r = await api('POST', `${proj}/_apis/wit/wiql?$top=${limit}&api-version=7.1`, { query })
+    const r = await api('POST', `${wit}/_apis/wit/wiql?$top=${limit}&api-version=7.1`, { query })
     const ids = r.workItems.map((w) => w.id).slice(0, limit)
     const out = []
     for (let i = 0; i < ids.length; i += 200) {
-      const batch = await api('POST', `${proj}/_apis/wit/workitemsbatch?api-version=7.1`, { ids: ids.slice(i, i + 200), fields: ['System.Id', 'System.Title', 'System.State', 'System.Tags', 'System.ChangedDate', 'System.WorkItemType'] })
+      const batch = await api('POST', `${wit}/_apis/wit/workitemsbatch?api-version=7.1`, { ids: ids.slice(i, i + 200), fields: ['System.Id', 'System.Title', 'System.State', 'System.Tags', 'System.ChangedDate', 'System.WorkItemType'] })
       out.push(...batch.value)
     }
     return out
@@ -493,7 +495,7 @@ function makeAdo(ctx) {
   return {
     context: async () => {
       const r = await getRepo()
-      return { host: 'ado', org, project, repo: r.name, nameWithOwner: `${org}/${project}/${r.name}`, defaultBranch: strip(r.defaultBranch), url: r.webUrl, config: ctx.config }
+      return { host: 'ado', org, project, boardsProject, repo: r.name, nameWithOwner: `${org}/${project}/${r.name}`, defaultBranch: strip(r.defaultBranch), url: r.webUrl, config: ctx.config }
     },
     whoami,
     issueView: async (n, withComments) => {
@@ -510,7 +512,7 @@ function makeAdo(ctx) {
     },
     issueCreate: async ({ title, body, labels, parent, type }) => {
       const wiType = type ?? ctx.config.workItemType
-      if (ctx.config.requireParent && parent === undefined) throw new HostError(`--parent is required: this repository files each ${wiType} under an existing ${ctx.config.parentType}`, 2)
+      if (ctx.config.requireParent && wiType === ctx.config.workItemType && parent === undefined) throw new HostError(`--parent is required: this repository files each ${wiType} under an existing ${ctx.config.parentType}`, 2)
       const ops = [
         { op: 'add', path: '/fields/System.Title', value: title },
         { op: 'add', path: '/fields/System.Description', value: body },
@@ -521,10 +523,10 @@ function makeAdo(ctx) {
       if (ctx.config.iterationPath) ops.push({ op: 'add', path: '/fields/System.IterationPath', value: ctx.config.iterationPath })
       if (parent !== undefined) {
         const p = await getWi(parent)
-        if (ctx.config.parentType && p.fields['System.WorkItemType'] !== ctx.config.parentType) throw new HostError(`parent ${parent} is a ${p.fields['System.WorkItemType']}, not a ${ctx.config.parentType}`, 2)
+        if (wiType === ctx.config.workItemType && ctx.config.parentType && p.fields['System.WorkItemType'] !== ctx.config.parentType) throw new HostError(`parent ${parent} is a ${p.fields['System.WorkItemType']}, not a ${ctx.config.parentType}`, 2)
         ops.push({ op: 'add', path: '/relations/-', value: { rel: 'System.LinkTypes.Hierarchy-Reverse', url: p.url } })
       }
-      const w = await api('POST', `${proj}/_apis/wit/workitems/$${encodeURIComponent(wiType)}?api-version=7.2-preview.3`, ops, 'application/json-patch+json')
+      const w = await api('POST', `${wit}/_apis/wit/workitems/$${encodeURIComponent(wiType)}?api-version=7.2-preview.3`, ops, 'application/json-patch+json')
       return { number: w.id, url: wiUrl(w.id), parent: parent ?? null, type: wiType }
     },
     issueEdit: async (n, { title, body, addLabels, removeLabels }) => {
@@ -540,14 +542,14 @@ function makeAdo(ctx) {
         const drop = new Set(removeLabels.map((l) => l.toLowerCase()))
         const next = [...current.filter((t) => !drop.has(t.toLowerCase()))]
         for (const l of addLabels) if (!next.some((t) => t.toLowerCase() === l.toLowerCase())) next.push(l)
-        ops.push({ op: 'add', path: '/fields/System.Tags', value: next.join('; ') })
+        ops.push({ op: current.length ? 'replace' : 'add', path: '/fields/System.Tags', value: next.join('; ') })
       }
       if (ops.length === 1) throw new HostError('issue edit needs --title, --body-file, --add-label, or --remove-label', 2)
       const r = await patchWi(n, ops)
       return { number: n, updated: true, rev: r.rev }
     },
     issueComment: async (n, body) => {
-      const c = await api('POST', `${proj}/_apis/wit/workItems/${n}/comments?format=markdown&api-version=7.2-preview.4`, { text: body })
+      const c = await api('POST', `${wit}/_apis/wit/workItems/${n}/comments?format=markdown&api-version=7.2-preview.4`, { text: body })
       return { id: String(c.id), url: `${wiUrl(n)}#${c.id}` }
     },
     issueClose: async (n, reason) => {
@@ -567,6 +569,7 @@ function makeAdo(ctx) {
         if (!names.length) return []
         clauses.push(`[System.State] IN (${names.join(', ')})`)
       }
+      if (ctx.config.areaPath) clauses.push(`[System.AreaPath] UNDER ${quote(ctx.config.areaPath)}`)
       if (label) clauses.push(`[System.Tags] CONTAINS ${quote(label)}`)
       if (search) clauses.push(`[System.Title] CONTAINS ${quote(search)}`)
       const rows = await wiql(`SELECT [System.Id] FROM WorkItems WHERE ${clauses.join(' AND ')} ORDER BY [System.ChangedDate] DESC`, limit)
@@ -709,8 +712,14 @@ function makeAdo(ctx) {
         status: 'completed', lastMergeSourceCommit: { commitId: sha },
         completionOptions: { mergeStrategy: strategy, deleteSourceBranch: !!deleteBranch, transitionWorkItems: true },
       })
-      if (done.status !== 'completed') throw new HostError(`PR ${n} did not complete; status is ${done.status} (a branch policy may block it)`)
-      return { number: n, merged: true, method, mergeCommit: done.lastMergeCommit?.commitId ?? null }
+      let pr = done
+      for (let i = 0; pr.status !== 'completed' && i < 30; i++) {
+        if (['conflicts', 'rejectedByPolicy', 'failure'].includes(pr.mergeStatus)) break
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+        pr = await api('GET', await repoApi(`/pullrequests/${n}?api-version=7.1`))
+      }
+      if (pr.status !== 'completed') throw new HostError(`PR ${n} did not complete: status ${pr.status}, merge status ${pr.mergeStatus}${pr.mergeFailureMessage ? `, ${pr.mergeFailureMessage}` : ''} (a branch policy or conflict may block it)`)
+      return { number: n, merged: true, method, mergeCommit: pr.lastMergeCommit?.commitId ?? null }
     },
     prLink: async (n, issue) => {
       const r = await getRepo()

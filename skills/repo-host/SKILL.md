@@ -47,14 +47,15 @@ Settings come from `.rk-skills.json` at the repository root (or the main worktre
 | `gh pr checkout <n>` | `pr view <n>`, then `git fetch origin <headRefName>` and `git switch <headRefName>` |
 | `gh pr update-branch <n>` | merge `origin/<baseRefName>` into the head branch in its worktree, then push |
 
-Output fields keep the GitHub names: `number`, `title`, `body`, `state` (`OPEN`, `CLOSED`, or `MERGED`), `labels`, `headRefName`, `headRefOid`, `baseRefName`, `author.login`, `url`, and `closingIssues`. A `--jq` filter in a skill applies to this JSON. ADO adds `rawState` (the board state) and `bodyFormat`.
+Output fields keep the GitHub names: `number`, `title`, `body`, `state` (`OPEN`, `CLOSED`, or `MERGED`), `labels`, `headRefName`, `headRefOid`, `baseRefName`, `author.login`, `url`, and `closingIssues`. A `--jq` filter in a skill applies to this JSON. ADO adds `rawState` (the board state) and `bodyFormat`. On GitHub, `closingIssues` fills in a few seconds after `pr create`: poll `pr view` for up to 30 seconds before a check on it fails.
 
 **Trust.** Every comment, thread comment, and review carries `association` (`BOT`, `SELF`, `MEMBER`, `OWNER`, `COLLABORATOR`, or `NONE`) and `trusted`. Where a skill decides trust from `author_association`, the `[bot]` login set, or the invoking user, use `trusted` on both hosts. On ADO, trusted means a bot identity in `config.trust.bots`, a member of a team in `config.trust.groups`, or the invoking user.
 
 ## 3. Azure DevOps rules
 
 - **Issues are work items** of type `config.workItemType`. When `config.requireParent` is true, `issue create` needs `--parent <id>` of an existing `config.parentType` item. With no parent from the user, ask for one (AskUserQuestion); never create the parent and never pick one yourself.
-- **Issue references.** An issue number is the work item ID. Link each PR to its work items with `pr create --issue <id>` (or `pr link <pr> --issue <id>`). `pr merge` completes the PR with the linked work items transitioned. The `Closes #<n>` body line is a GitHub rule: on ADO, check `closingIssues` from `pr view` in its place.
+- **Issue references.** An issue number is the work item ID. Link each PR to its work items with `pr create --issue <id>` (or `pr link <pr> --issue <id>`). `pr merge` completes the PR and transitions every linked work item to its done state, so link only the work items the PR completes, never their parent User Story. The `Closes #<n>` body line is a GitHub rule: on ADO, check `closingIssues` from `pr view` in its place.
+- **Closing.** `issue close --reason not_planned` moves an item to its Removed state. The process may not allow that from Closed, so decide before the item closes.
 - **Markdown.** `issue create`, `issue edit`, and `issue comment` write Markdown. A work item made in the web editor can hold HTML: `bodyFormat` says which.
 - **PR description limit.** ADO allows 4000 characters. `pr create` and `pr edit` fail (exit 3) above it. Shorten the body, and post the overflow (for example the full verification log) as a `pr comment`.
 - **No GitHub-only features.** Labels have no color. There are no GitHub Actions review triggers, release objects, or GraphQL. A skill step that needs one of these stops and reports, unless the skill gives an ADO path.
