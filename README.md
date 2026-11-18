@@ -60,7 +60,7 @@ Issues carry a **complexity score** (`C0` to `C100`) in the title and a `plan: y
 | `fable-new-issue-loop` | Runs `fable-new-issue`, then drives the issue to a reviewed PR. |
 | `fable-validate` | `validate-issue` run on a Fable 5.2 subagent; your session presents the verdict and acts on it. |
 | `fable-validate-loop` | Runs `fable-validate`, applies fixes, gets a Fable plan when score is 75 or higher, the code is safety-critical, or the issue stamps `plan first: Yes`, then drives to a reviewed PR. |
-| `fable-validate-fableplan-loop` | Same, with an unconditional Fable plan. On Claude Code, an Opus 5.5 subagent builds at `medium` effort below score 50 and `high` from 50; other harnesses use the session build. |
+| `fable-validate-fableplan-loop` | Same, with an unconditional Fable plan. On Claude Code or Copilot CLI, an Opus 5.5 subagent builds at `medium` effort below score 50 and `high` from 50; other harnesses use the session build. |
 | `fable-validate-fableplan` | Fable validates, fixes are applied, a Fable plan is posted, and it stops there. |
 | `validate-fableplan-loop` | Validates on the session's own model, brings in Fable for planning at score 75 or higher, when safety-flagged, or when the issue stamps `plan first: Yes`, then drives to a reviewed PR. |
 | `fableplan-work-on-issue` | Fable plans, `work-on-issue` builds and opens the PR. No validation, no review loop. |
@@ -69,6 +69,7 @@ Issues carry a **complexity score** (`C0` to `C100`) in the title and a `plan: y
 | `fable-orchestrate` | Runs on Fable 5.2: splits the task into worker specs, dispatches Sonnet 5.5 workers, reviews each result, integrates one branch, and gets a binding verdict from a fresh Fable 5.2 reviewer before opening the PR. |
 | `cli-dispatch` | Reference skill: how a build stamped on the Codex CLI or Cursor CLI reaches that CLI. Loaded by the Opus driver that `milestone-pipeline` dispatches for such an issue, and by the `codex-validate-plan-work-on-issue` and `codex-validate-fableplan-work-on-issue` sessions for their Codex validate pass. |
 | `fable-dispatch` | Reference skill: how every Fable skill reaches Fable 5.2 on the current harness, with the fallback ladder and its reporting. Loaded before any Fable subagent is dispatched. |
+| `copilot-harness` | Reference skill: how every rk-skills skill runs in GitHub Copilot CLI. Maps the Claude Code Agent tool to the Copilot `task` tool (agent type, model ID, effort, background mode), the other Claude tools, the `copilot/` branch prefix, the `Copilot CLI` harness name, Git Bash on Windows, and the served-model check. Loaded first in every Copilot CLI session. |
 
 ### Codex-driven skills
 
