@@ -126,6 +126,31 @@ await check('issue create without --parent stops before any API call', () => {
     expect(r.code === 2 && /--parent is required/.test(r.error?.error), `code ${r.code} ${r.error?.error}`)
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
+await check('--flag=value is parsed and an unknown flag is a usage error', () => {
+  const dir = scratchRepo('https://dev.azure.com/org1/p/_git/r')
+  try {
+    const bad = rk(dir, ['pr', 'list', '--state=bogus'], { RK_HOST_ADO_TOKEN: 'invalid' })
+    expect(bad.code === 2 && /--state must be one of/.test(bad.error?.error), `state=: code ${bad.code} ${bad.error?.error}`)
+    const unknown = rk(dir, ['issue', 'close', '1', '--reasn', 'not_planned'], { RK_HOST_ADO_TOKEN: 'invalid' })
+    expect(unknown.code === 2 && /does not accept --reasn/.test(unknown.error?.error), `unknown: code ${unknown.code} ${unknown.error?.error}`)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+await check('config comes from origin/HEAD, never the working tree', () => {
+  const dir = scratchRepo('https://dev.azure.com/org1/p/_git/r')
+  const env = { RK_HOST_ADO_TOKEN: 'invalid', RK_SKILLS_HOME: join(dir, '.no-user-config') }
+  const args = ['issue', 'create', '--title', 't', '--body-file', body('cfg.md', 'x')]
+  try {
+    writeFileSync(join(dir, '.rk-skills.json'), JSON.stringify({ requireParent: false }))
+    const tree = rk(dir, args, env)
+    expect(tree.code === 2 && /--parent is required/.test(tree.error?.error), `working tree config was read: code ${tree.code} ${tree.error?.error}`)
+    sh('git', ['-C', dir, 'add', '.rk-skills.json'], dir)
+    sh('git', ['-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@example.invalid', 'commit', '-q', '-m', 'cfg'], dir)
+    sh('git', ['-C', dir, 'update-ref', 'refs/remotes/origin/main', 'HEAD'], dir)
+    sh('git', ['-C', dir, 'symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main'], dir)
+    const head = rk(dir, args, env)
+    expect(head.code === 1 && /rejected the credentials|anonymous/.test(head.error?.error), `origin/HEAD config not honored: code ${head.code} ${head.error?.error}`)
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
 await check('pr merge rejects a short SHA', () => {
   const dir = scratchRepo('https://dev.azure.com/org1/p/_git/r')
   try {

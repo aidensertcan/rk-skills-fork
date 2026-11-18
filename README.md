@@ -176,7 +176,7 @@ Copilot CLI reads the `.claude-plugin` manifest as it is. A plugin installed fro
 
 Prerequisites: Node 18 or later; Git for Windows on Windows (skills run their bash snippets through Git Bash); `gh` for GitHub repositories; Azure CLI with the `azure-devops` extension and `az login` for Azure DevOps repositories; `jq` for some snippets. `milestone-workflow` needs Copilot dynamic workflows (experimental mode, an extension mode other than `disabled`, and usage-based billing).
 
-For an Azure DevOps repository, add an entry to `~/.rk-skills/config.json` (or commit `.rk-skills.json` at the repository root):
+For an Azure DevOps repository, add an entry to `~/.rk-skills/config.json` (or commit `.rk-skills.json` at the repository root on the default branch; `rk-host` reads it from `origin/HEAD` only):
 
 ```json
 {

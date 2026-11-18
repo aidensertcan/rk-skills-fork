@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 
 const ADO_RESOURCE = '499b84ac-1321-427f-aa17-267ca6975798'
 const GITHUB_REVIEW_BOTS = ['github-actions', 'claude']
@@ -55,9 +55,10 @@ function parseArgs(argv) {
       positional.push(arg)
       continue
     }
-    const key = arg.slice(2)
+    const eq = arg.indexOf('=')
+    const key = eq === -1 ? arg.slice(2) : arg.slice(2, eq)
     const next = argv[i + 1]
-    const value = next === undefined || next.startsWith('--') ? true : (i++, next)
+    const value = eq !== -1 ? arg.slice(eq + 1) : next === undefined || next.startsWith('--') ? true : (i++, next)
     if (flags[key] === undefined) flags[key] = value
     else flags[key] = [].concat(flags[key], value)
   }
@@ -133,23 +134,33 @@ function merge(base, extra) {
   return out
 }
 
+function defaultBranchConfig(remoteName) {
+  const head = git(['rev-parse', '--abbrev-ref', `${remoteName}/HEAD`], { allowFailure: true })
+  const ref = typeof head === 'string' ? head.trim() : ''
+  if (!ref || ref === `${remoteName}/HEAD`) return null
+  const blob = git(['show', `${ref}:.rk-skills.json`], { allowFailure: true })
+  if (typeof blob !== 'string') return null
+  try {
+    return JSON.parse(blob.replace(/^\uFEFF/, ''))
+  } catch (error) {
+    throw new HostError(`invalid JSON in ${ref}:.rk-skills.json: ${error.message}`)
+  }
+}
+
 function loadContext() {
-  const root = git(['rev-parse', '--show-toplevel']).trim()
-  const commonDir = git(['rev-parse', '--path-format=absolute', '--git-common-dir']).trim()
-  const mainRoot = dirname(commonDir)
   const remoteName = process.env.RK_HOST_REMOTE || 'origin'
   const remoteUrl = git(['remote', 'get-url', remoteName]).trim()
   const remote = parseRemote(remoteUrl)
   const home = process.env.RK_SKILLS_HOME || join(homedir(), '.rk-skills')
   const userFile = readJson(join(home, 'config.json'))
   const userEntry = userFile?.repos ? Object.entries(userFile.repos).find(([key]) => key.toLowerCase() === remote.key)?.[1] : null
-  const repoFile = readJson(join(root, '.rk-skills.json')) ?? (mainRoot !== root ? readJson(join(mainRoot, '.rk-skills.json')) : null)
+  const repoFile = defaultBranchConfig(remoteName)
   const defaults = remote.host === 'ado'
     ? { workItemType: 'Task', parentType: 'User Story', requireParent: true, trust: { bots: [], groups: [] }, branchPrefix: null, release: null }
     : { trust: { bots: [] }, branchPrefix: null, release: null }
   const config = merge(merge(defaults, userEntry), repoFile)
   if (config.host && config.host !== remote.host) throw new HostError(`config host ${config.host} does not match remote host ${remote.host}`)
-  return { root, remote, config, remoteName }
+  return { remote, config, remoteName }
 }
 
 function ghJson(args, options) {
@@ -744,8 +755,19 @@ async function main(argv) {
     return
   }
   const key = ['context', 'whoami'].includes(group) ? group : `${group} ${action}`
-  const known = ['context', 'whoami', 'issue view', 'issue create', 'issue edit', 'issue comment', 'issue close', 'issue list', 'issue linked-prs', 'pr view', 'pr list', 'pr create', 'pr edit', 'pr comment', 'pr comments', 'pr threads', 'pr reviews', 'pr reply', 'pr resolve', 'pr review', 'pr diff', 'pr checks', 'pr merge', 'pr link']
-  if (!known.includes(key)) throw new HostError(`unknown command: ${[group, action].filter(Boolean).join(' ')}\n${usage()}`, 2)
+  const allowed = {
+    'context': [], 'whoami': [],
+    'issue view': ['comments'], 'issue create': ['title', 'body-file', 'label', 'parent', 'type'],
+    'issue edit': ['title', 'body-file', 'add-label', 'remove-label'], 'issue comment': ['body-file'], 'issue close': ['reason'],
+    'issue list': ['state', 'label', 'search', 'limit', 'type'], 'issue linked-prs': [],
+    'pr view': [], 'pr list': ['state', 'head', 'base', 'search', 'limit'], 'pr create': ['title', 'body-file', 'base', 'head', 'draft', 'issue'],
+    'pr edit': ['title', 'body-file'], 'pr comment': ['body-file', 'active'], 'pr comments': [], 'pr threads': [], 'pr reviews': [],
+    'pr reply': ['thread', 'body-file'], 'pr resolve': ['thread'], 'pr review': ['event', 'body-file'], 'pr diff': [], 'pr checks': [],
+    'pr merge': ['match-head', 'squash', 'merge', 'rebase', 'delete-branch'], 'pr link': ['issue'],
+  }
+  if (!Object.hasOwn(allowed, key)) throw new HostError(`unknown command: ${[group, action].filter(Boolean).join(' ')}\n${usage()}`, 2)
+  const unknownFlags = Object.keys(flags).filter((f) => !allowed[key].includes(f))
+  if (unknownFlags.length) throw new HostError(`${key} does not accept ${unknownFlags.map((f) => `--${f}`).join(', ')}`, 2)
   const ctx = loadContext()
   const h = ctx.remote.host === 'github' ? makeGitHub(ctx) : makeAdo(ctx)
   const state = (allowed, fallback) => {

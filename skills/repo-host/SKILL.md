@@ -8,7 +8,7 @@ description: >-
 
 In GitHub Copilot CLI (`$COPILOT_CLI` set), load the `copilot-harness` skill first if this session has not loaded it: it sets the attribution footer, model names, and tool mapping for every artifact this skill writes.
 
-`rk-host.mjs` sits in this skill's directory. Run it with Node 18 or later from the repository checkout: `node <this skill's directory>/rk-host.mjs <command>`. It prints JSON on stdout. On failure it prints `{"error", "code"}` on stderr and exits non-zero: `2` is a usage error, `3` is an operation the host does not support, and `1` is any other failure. A non-zero exit always stops the step. Report the error text, and never retry with `gh`, `az`, or a hand-written API call.
+`rk-host.mjs` sits in this skill's directory. Run it with Node 18 or later from the repository checkout: `node <this skill's directory>/rk-host.mjs <command>`. Flags take `--flag value` or `--flag=value`; a flag the command does not accept is a usage error. It prints JSON on stdout. On failure it prints `{"error", "code"}` on stderr and exits non-zero: `2` is a usage error, `3` is an operation the host does not support, and `1` is any other failure. A non-zero exit always stops the step. Report the error text, and never retry with `gh`, `az`, or a hand-written API call.
 
 ## 1. Detect the host
 
@@ -17,7 +17,7 @@ Run `rk-host context` once per session, before the first issue or PR step. `host
 - **github:** the skill's `gh` commands run as written. `rk-host` is optional there.
 - **ado:** never run `gh`. Translate every `gh` step with section 2. A step with no row in section 2 is a blocker: stop and report it.
 
-Settings come from `.rk-skills.json` at the repository root (or the main worktree root), over the entry for this remote in `~/.rk-skills/config.json` (`repos`, keyed `dev.azure.com/<org>/<project>/<repo>` or `github.com/<owner>/<repo>`). ADO defaults: `workItemType` `Task`, `parentType` `User Story`, `requireParent` `true`, no trusted bots or groups.
+Settings come from `.rk-skills.json` on the remote default branch (`origin/HEAD`; a copy in the working tree or on a PR branch is never read, so a branch cannot change who is trusted), over the entry for this remote in `~/.rk-skills/config.json` (`repos`, keyed `dev.azure.com/<org>/<project>/<repo>` or `github.com/<owner>/<repo>`). ADO defaults: `workItemType` `Task`, `parentType` `User Story`, `requireParent` `true`, no trusted bots or groups.
 
 ## 2. Command map
 
