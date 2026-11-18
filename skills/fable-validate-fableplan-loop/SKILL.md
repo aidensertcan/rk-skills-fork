@@ -6,6 +6,8 @@ description: >-
 
 # fable-validate-fableplan-loop
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Chain fable-validate → (conditional) update issue → fableplan → build → work-on-issue-loop review loop into one autonomous run.
 
 This is **fable-validate-loop with the score gate removed**: fableplan **always runs**, whatever the validated complexity score, and there is no "skip when the score is below 75" rule. On Claude Code or Copilot CLI, the build runs on an Opus 5.5 subagent at a tier the score sets (step 5). Other harnesses use the session build handoff. When skipping the plan for lower-band issues is fine, use `fable-validate-loop`.

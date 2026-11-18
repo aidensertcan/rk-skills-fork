@@ -6,6 +6,8 @@ description: >-
 
 # codex-validate-fableplan-work-on-issue
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 This skill is `codex-validate-plan-work-on-issue` with its Codex plan stage replaced by a score-gated Fable 5.2 plan, and with a score-set build tier. The validate stage, the review trigger, and the report are the same. Each issue is its own pipeline and advances the moment its own previous stage ends. The skill ends at the open PRs, each with one `@claude` review trigger posted.
 
 Report length, wording, and formatting follow the Response Style section of CLAUDE.md/AGENTS.md. This skill restates none of it.

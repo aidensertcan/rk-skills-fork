@@ -5,6 +5,8 @@ description: Required format for creating or editing any GitHub issue — [C<sco
 
 # GitHub issue format
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 ## Title
 
 - `[C<score>] <title>`: a plain-simple-English sentence in ASD-STE100, precise about component and behavior, e.g. `[C95] Orders can be filled twice when two fills arrive at the same moment`.

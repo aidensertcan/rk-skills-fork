@@ -5,6 +5,8 @@ description: Use when the user asks to sync, update, or refresh CLAUDE.md, AGENT
 
 # sync-docs
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Keep CLAUDE.md, AGENTS.md, SKILL.md, and README.md accurate after new commits land: find the last docs-sync point, classify every commit since then, and write targeted edits. Syncing is bidirectional: add what is new, and **remove or correct anything the current codebase contradicts**.
 
 Edit the docs that exist; never create a new top-level doc (AGENTS.md, CHANGELOG.md, SKILL.md) during a sync. If one seems warranted, tell the user.

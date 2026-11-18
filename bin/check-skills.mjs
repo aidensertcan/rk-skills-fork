@@ -1,8 +1,12 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
+const ghOperation = /\bgh (issue|pr|api|repo|release|auth|label|run)\b/
+const hostLine = 'load the `repo-host` skill'
+const copilotDescriptionLimit = 1024
 const emoji = /[\p{Extended_Pictographic}\u{FE0F}\u{20E3}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}]/gu
 
 function descriptionSource(lines) {
@@ -16,6 +20,13 @@ function descriptionSource(lines) {
     body.push(line.trim())
   }
   return { style: 'folded', text: body.join(' ') }
+}
+
+function skillFiles(dir) {
+  return readdirSync(dir).flatMap((entry) => {
+    const path = join(dir, entry)
+    return statSync(path).isDirectory() ? skillFiles(path) : [path]
+  })
 }
 
 function checkSkill(name) {
@@ -40,6 +51,8 @@ function checkSkill(name) {
   if (!expected) failures.push(`${path}: description is not a top-level key`)
   else if (/^["'|>]/.test(expected.text) && expected.style === 'plain') failures.push(`${path}: description must be a plain scalar or a >- block`)
   else if (data.description !== expected.text) failures.push(`${path}: parsed description (${data.description.length} chars) does not equal its source text (${expected.text.length} chars)`)
+  if (data.description.length > copilotDescriptionLimit) failures.push(`${path}: description has ${data.description.length} characters; GitHub Copilot CLI rejects a skill description over ${copilotDescriptionLimit}`)
+  if (name !== 'repo-host' && !source.includes(hostLine) && skillFiles(`${root}skills/${name}`).some((file) => ghOperation.test(readFileSync(file, 'utf8')))) failures.push(`${path}: runs gh operations but has no line telling the model to ${hostLine}`)
   return failures
 }
 

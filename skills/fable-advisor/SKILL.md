@@ -5,6 +5,8 @@ description: Use when the user wants a task executed by the current session mode
 
 # fable-advisor
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 The main agent (the **executor**) builds. A persistent **Fable 5.2 advisor** subagent writes the plan and answers checkpoint consults. A **separate fresh Fable 5.2 reviewer** gives the binding pre-commit verdict. Never merge the two roles. An issue task runs `work-on-issue`'s pipeline; a prose task takes a lighter path.
 
 ## Input

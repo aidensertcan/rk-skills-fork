@@ -5,6 +5,8 @@ description: Use when the user asks to fix a PR review and drive it to approval 
 
 # fix-pr-review-loop
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Resolve the latest review with `fix-pr-review`, wait for the bot's re-review, repeat. This skill owns the step 3 stop rules and the step 5 table. `work-on-issue-loop` runs steps 2 to 4 and reuses step 5's table with deltas; edit its step 4 with that table.
 
 On Azure DevOps (`repo-host` context `host: ado`), `repo-host` section 4 replaces the review-trigger, wait, and fetch mechanics of this skill; every stop condition and validation rule here still applies.

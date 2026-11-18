@@ -5,6 +5,8 @@ description: Turn a finished Product Requirements Document (PRD) into GitHub mil
 
 # prd-to-issues
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Produce a complete, dependency-ordered backlog an agent can implement from each issue plus its cited PRD. The deliverable ends at verified GitHub issues; building and dispatch need their own instruction.
 
 Follow the target repo's CLAUDE.md/AGENTS.md Response Style and attribution rules. Read [github-issue-format](../github-issue-format/SKILL.md) before composing bodies. Read [validate-issue step 6](../validate-issue/SKILL.md#6-score-complexity) and its [complexity-scoring reference](../validate-issue/complexity-scoring.md) for scoring and routing; they own the formula and band tables. Do not start the validation workflow.

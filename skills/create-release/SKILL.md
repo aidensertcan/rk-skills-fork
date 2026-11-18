@@ -5,6 +5,8 @@ description: Use when the user asks to "create a release", "cut a release", "tag
 
 # create-release
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 On Azure DevOps (`repo-host` context `host: ado`), follow `repo-host` section 5 in place of this file.
 
 Tag a SHA on `origin/<default>` (annotated semver) and publish a GitHub release with generated notes. The local branch never decides what ships. Never push to the default branch: the version bump and notes entry land through a pull request (PR).

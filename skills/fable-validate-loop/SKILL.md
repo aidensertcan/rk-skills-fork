@@ -6,6 +6,8 @@ description: >-
 
 # fable-validate-loop
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Chain fable-validate → (conditional) update issue → (conditional) fableplan → work-on-issue-loop into one unattended run. Parse each skill's output and proceed where the interactive skill would wait for the user, except at the STOP rows below.
 
 **Do not skip or reorder the chain.** Validation gates planning, and the plan gates implementation. The only sanctioned skip is the step-4 score gate. Every other step of each skill still runs.

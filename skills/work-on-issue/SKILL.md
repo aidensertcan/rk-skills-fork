@@ -5,6 +5,8 @@ description: Use when the user says "work on issue", "implement issue", "/work-o
 
 # work-on-issue
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Take the issue to a verified open pull request (PR). CLAUDE.md/AGENTS.md owns engineering, attribution, and Response Style rules. Never pause to ask: report at the end, or stop and report on a failed gate.
 
 ## Input

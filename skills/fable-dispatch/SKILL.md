@@ -6,6 +6,8 @@ description: >-
 
 # Fable dispatch
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 The caller owns the prompt, subagent type, and use of the result; this skill owns the path to Fable 5.2.
 
 ## 1. Detect the harness

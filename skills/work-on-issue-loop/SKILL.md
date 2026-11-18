@@ -5,6 +5,8 @@ description: Use when the user asks to implement a GitHub issue and drive it thr
 
 # work-on-issue-loop
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Drive an issue from "validated" to "PR reviewed to convergence" without stopping. fix-pr-review-loop owns the loop mechanics (bot selection, preflight, wait, stop conditions, cycle cap, resolution, terminal table). With an existing PR and no issue to implement, use fix-pr-review-loop directly.
 
 On Azure DevOps (`repo-host` context `host: ado`), `repo-host` section 4 replaces the review-trigger, wait, and fetch mechanics of this skill; every stop condition and validation rule here still applies. On ADO, step 1 posts no trigger: it dispatches the first reviewer subagent.

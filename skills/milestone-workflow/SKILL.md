@@ -6,6 +6,8 @@ description: >-
 
 # milestone-workflow
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 No subagent holds merge authority: at each LGTM the run pauses as `awaiting_merge`; the session merges (step 5) and resumes with the merge in `args.merged`. Read-only table: `milestoneplan`.
 
 ## Steps

@@ -5,6 +5,8 @@ description: Use when the user wants an app idea turned into a Product Requireme
 
 # app-prd
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Turn a raw idea dump into a complete, implementable PRD committed to the target repo. Write it so a cold agent could implement from it plus nothing else.
 
 ## Input

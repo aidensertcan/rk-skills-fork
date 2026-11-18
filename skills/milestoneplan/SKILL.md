@@ -5,6 +5,8 @@ description: Use when the user wants a milestone's execution plan shown as a tab
 
 # milestoneplan
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Show a milestone's execution plan as one table. **This skill never writes**: no issue edits, comments, PRs, or Workflow runs. Fixes belong to `execution-plan-review`; the run belongs to `milestone-workflow`.
 
 ## Input

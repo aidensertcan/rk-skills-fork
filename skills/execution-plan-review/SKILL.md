@@ -5,6 +5,8 @@ description: Use when the user wants to review or revise the ordering/model/effo
 
 # execution-plan-review
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Show a milestone's per-issue ordering and execution assignments as one table, take the user's revisions, and sync the GitHub issues, which are the source of truth. `milestoneplan` is the read-only view of this table; it routes Execution-block fixes here.
 
 ## Steps

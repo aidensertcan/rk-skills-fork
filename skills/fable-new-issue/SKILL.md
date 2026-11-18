@@ -5,6 +5,8 @@ description: Use when the user wants a GitHub issue created by a Fable 5.2 subag
 
 # fable-new-issue
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Delegate issue drafting to a **Fable 5.2** subagent, then file it from the main agent. The subagent only researches and composes. It never files, edits files, or posts to GitHub; the main agent handles filing and all follow-on actions.
 
 ## Input

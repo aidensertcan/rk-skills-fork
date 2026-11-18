@@ -6,6 +6,8 @@ description: >-
 
 # PR review format
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 ## Review contract
 
 ### Before you write

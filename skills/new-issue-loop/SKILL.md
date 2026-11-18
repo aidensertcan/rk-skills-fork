@@ -5,6 +5,8 @@ description: Use when the user asks to file a GitHub issue and then autonomously
 
 # new-issue-loop
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Chain new-issue → validate-issue-loop into one autonomous run with no human between steps: the loop feeds the issue it just filed into the validate-and-implement pipeline.
 
 **Do not skip filing a complete issue.** Every step of new-issue still runs (grounding, approach design, complexity score); only the "offer next steps and wait" step is replaced by the handoff.
