@@ -10,7 +10,7 @@ rk-skills is written for Claude Code. In Copilot CLI, read every other rk-skills
 
 ## 1. Detect
 
-`fable-dispatch` section 1 prints `copilot-cli` when `$COPILOT_CLI` is set and `$CLAUDECODE` is not. Where a skill takes a path "on Claude Code" because it needs the Agent tool, Copilot CLI takes the same path with the `task` tool (section 2). Where a skill states that a stage needs background Agent subagents, Copilot CLI meets that requirement.
+`fable-dispatch` section 1 prints `copilot-cli` when `$COPILOT_CLI` is set and `$CLAUDECODE` is not. Where a skill takes a path "on Claude Code" because it needs the Agent tool, Copilot CLI takes the same path with the `task` tool (section 2). Where a skill states that a stage needs background Agent subagents, Copilot CLI meets that requirement. Load the `repo-host` skill before the first issue or pull request step: on Azure DevOps its rules replace every `gh` step.
 
 ## 2. Agent tool to `task` tool
 
@@ -52,7 +52,7 @@ rk-skills is written for Claude Code. In Copilot CLI, read every other rk-skills
 
 ## 4. Worktrees, branch prefix, and attribution
 
-- **Branch prefix:** `copilot/`. Where a skill writes `cc/` as this session's prefix, use `copilot/` (for example `copilot/issue-123-scale-in-pyramiding`). Where a skill lists the harness prefixes it accepts from earlier runs (`cc/`, `cursor/`, `codex/`), accept `copilot/` too.
+- **Branch prefix:** `copilot/`, unless `rk-host context` returns `config.branchPrefix` (for example `feature/copilot-`), which replaces `copilot/` including its slash (`feature/copilot-issue-123-scale-in-pyramiding`). Where a skill writes `cc/` as this session's prefix, use `copilot/` (for example `copilot/issue-123-scale-in-pyramiding`). Where a skill lists the harness prefixes it accepts from earlier runs (`cc/`, `cursor/`, `codex/`), accept `copilot/` too.
 - **Worktree:** `git worktree add <path> -b <branch> <resolved-base>` from the repository root, with the path the skill names for Cursor and Codex (for example `.claude/worktrees/copilot/issue-<N>-<slug>`). Confirm `HEAD` equals the resolved base, and anchor later commands with `git -C <worktree-path>`.
 - **Harness field:** `Copilot CLI`. Where a skill writes `Claude Code` as the harness of this session's own artifacts (footers, PR bodies, plan comments), write `Copilot CLI`. A skill name suffix (for example `| codex-validate-fableplan-work-on-issue`) stays.
 - **Model names in footers and PR title brackets:** the display name of the model that served (section 2 served-model check), for example `Fable 5.2`, `Opus 5.5`, or `Sonnet 5.5`.

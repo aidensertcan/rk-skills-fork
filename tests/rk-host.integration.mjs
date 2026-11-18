@@ -232,6 +232,15 @@ else {
     await check('ADO: list finds the Task in the configured area', () => {
       expect(ok(adoBoards, ['issue', 'list', '--state', 'open', '--search', TS]).some((i) => i.number === made.task), 'task not listed')
     })
+    await check('ADO: Markdown with HTML-sensitive text round-trips exactly, comments oldest first', () => {
+      const tricky = `A & B < C > D "E" 'F' literal-&amp; &quot; <b>x</b>\n\n> quote\n\n\`List<String> & <x> "q"\` ${TS}`
+      ok(adoBoards, ['issue', 'edit', String(made.task), '--body-file', body('esc.md', tricky)])
+      expect(ok(adoBoards, ['issue', 'view', String(made.task)]).body === tricky, 'body changed in storage')
+      ok(adoBoards, ['issue', 'comment', String(made.task), '--body-file', body('esc2.md', tricky)])
+      const comments = ok(adoBoards, ['issue', 'view', String(made.task), '--comments']).comments
+      expect(comments.at(-1).body === tricky, 'newest comment is not last or changed in storage')
+      expect(comments.every((c, i) => i === 0 || new Date(comments[i - 1].createdAt) <= new Date(c.createdAt)), 'comments not oldest first')
+    })
 
     await check('ADO: open a PR linked to the Task across projects', () => {
       pushBranch(adoSandbox, made.base, 'origin/main')

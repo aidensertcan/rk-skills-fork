@@ -7,6 +7,8 @@ description: Use when the user asks to fix, address, or respond to a PR review â
 
 Autonomously resolve every unaddressed review finding: validate, fix or refute, implement judgment calls and optional improvements, request re-review. Never stop to ask the user. The review is a hypothesis: change nothing before step 4 traces it.
 
+On Azure DevOps (`repo-host` context `host: ado`), `repo-host` section 4 replaces the review-trigger, wait, and fetch mechanics of this skill; every stop condition and validation rule here still applies.
+
 ## Input
 
 Any order: PR number/URL (default: the current branch's PR); literal `codex` selects Codex as this cycle's re-review bot. Ignore other tokens and name them in step 11. No PR â†’ say so, stop.

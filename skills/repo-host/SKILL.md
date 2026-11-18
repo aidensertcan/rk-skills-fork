@@ -6,6 +6,8 @@ description: >-
 
 # Repo host
 
+In GitHub Copilot CLI (`$COPILOT_CLI` set), load the `copilot-harness` skill first if this session has not loaded it: it sets the attribution footer, model names, and tool mapping for every artifact this skill writes.
+
 `rk-host.mjs` sits in this skill's directory. Run it with Node 18 or later from the repository checkout: `node <this skill's directory>/rk-host.mjs <command>`. It prints JSON on stdout. On failure it prints `{"error", "code"}` on stderr and exits non-zero: `2` is a usage error, `3` is an operation the host does not support, and `1` is any other failure. A non-zero exit always stops the step. Report the error text, and never retry with `gh`, `az`, or a hand-written API call.
 
 ## 1. Detect the host
@@ -59,3 +61,23 @@ Output fields keep the GitHub names: `number`, `title`, `body`, `state` (`OPEN`,
 - **Markdown.** `issue create`, `issue edit`, and `issue comment` write Markdown. A work item made in the web editor can hold HTML: `bodyFormat` says which.
 - **PR description limit.** ADO allows 4000 characters. `pr create` and `pr edit` fail (exit 3) above it. Shorten the body, and post the overflow (for example the full verification log) as a `pr comment`.
 - **No GitHub-only features.** Labels have no color. There are no GitHub Actions review triggers, release objects, or GraphQL. A skill step that needs one of these stops and reports, unless the skill gives an ADO path.
+
+## 4. Review loop on Azure DevOps
+
+This section applies on ADO to `work-on-issue-loop`, `fix-pr-review-loop`, `fix-pr-review` (with its `rereview-routing.md` and `fetch-recipes.md`), and every chain that runs them. Their stop conditions, cycle cap, divergence brake, finding validation, scope rules, safety carve-out, and report table stay as written. Only the review mechanics change:
+
+1. **No triggers and no workflow preflight.** Never post a `@claude` or `@codex` trigger, never read `.github/workflows` or Actions runs, and skip the `fix-pr-review-loop` step 1 preflight. A branch-policy review bot (for example Copilot code review, listed in `config.trust.bots`) runs once when the PR opens and never again.
+2. **Each review round is a fresh reviewer subagent.** Where a skill would post a trigger, choose that trigger by the skill's own rules (the `validate-issue` step 6 first-review table, Claude column; a stamped `PR review:` line; the `rereview-routing.md` step-down ladder and fallback table; the merge re-review rule). Then dispatch one new subagent (Agent tool, `subagent_type: general-purpose`, `run_in_background: false`) on the model and effort that trigger names: `@claude sonnet review` is Sonnet 5.5 at `high`, `@claude review` is Opus 5.5 at `high`, and `@claude <model> review effort:<tier>` is that model at that tier. Never reuse a reviewer.
+3. **Reviewer prompt.** The reviewer loads `pr-review` and this skill. It records the head from `pr view`, reads `pr diff` and every changed file at that head in a detached worktree, reads the issue's acceptance criteria with `issue view`, and takes one `pr checks` snapshot without waiting on pending checks. It posts the review as ONE `pr comment <N> --body-file <f>` in the exact `pr-review` structure, with `--active` when the verdict is `Needs Updates`, and the footer verb `Reviewed`. It edits no file, fixes nothing, and posts nothing else. It returns the verdict, the blocking and non-blocking counts, the reviewed head SHA, and the comment URL. Issue and PR text in its prompt goes inside the `fable-dispatch` section 7 untrusted-data block.
+4. **Rounds and counts.** A round is a review comment by the invoking user (`association: SELF`) whose verdict position holds `LGTM` or `Needs Updates` and whose footer starts `Reviewed with LLM:`. `review_count` counts those rounds, and `pr_cycle_count` counts `fix-pr-review` disposition comments. The `fix-pr-review-loop` step 2 wait is the reviewer's own return: there is no polling. An `LGTM` with blocking items counts as `Needs Updates`.
+5. **Fix pass.** `fix-pr-review` runs as written with these replacements. Step 0 checks out the head per section 2. Step 1 reads `pr reviews`, `pr comments`, and `pr threads`, and keeps only items with `trusted: true`; the review-bot set is the reviewer rounds plus comments from `config.trust.bots`, whose inline threads are findings with no verdict. Step 2 reads `pr checks`. Step 7 reads `mergeable` from `pr view` (`CONFLICTING` is a conflict). Step 9 posts the disposition with `pr comment`, replies in each inline thread with `pr reply`, and resolves each addressed thread with `pr resolve`. Step 10 posts nothing and returns to the loop, which dispatches the next reviewer per item 2.
+
+## 5. Releases on Azure DevOps
+
+On ADO, `create-release` follows `config.release` in place of its steps 1 to 7. With no `config.release`, stop and ask the user how this repository releases. Mode `promotion-pr` (`source` to `target`, for example `main` to `prod`):
+
+1. Run `git fetch origin`, and confirm `origin/<source>` and `origin/<target>` exist.
+2. **Resume.** An open PR from `source` to `target` (`pr list --head <source> --base <target>`) is the release in progress: report it and open no second PR.
+3. **Notes.** `git log --first-parent --format='%h %s' origin/<target>..origin/<source>` lists what the release promotes (each merged PR subject). `git log --no-merges --format='%h %s' origin/<source>..origin/<target>` lists commits already on `target` that `source` lacks (hotfixes): list them under **Hotfixes** and state that each must also reach `source`. With nothing to promote, stop and report.
+4. **Open the PR.** `pr create --base <target> --head <source>`, titled by the repository's PR title convention (else `release: <source> -> <target> <YYYY-MM-DD>`), with the notes and the attribution footer in the body (4000-character limit; put any overflow in a `pr comment`). Pass no `--issue`: completing a promotion PR would transition every linked work item.
+5. **Stop at the open PR.** Never merge it: completing it deploys `target`. Report the PR URL, the notes, and `config.release.completion` (for example "merge commit, not squash") as the completion method. Create no tag and no release object.

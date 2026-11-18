@@ -438,6 +438,10 @@ function makeAdo(ctx) {
     return s && (s.category === 'Completed' || s.category === 'Removed') ? 'CLOSED' : 'OPEN'
   }
   const tags = (value) => (value ? value.split(';').map((t) => t.trim()).filter(Boolean) : [])
+  const toWit = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  const fromWit = (text, format) => String(format).toLowerCase() === 'markdown'
+    ? text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&amp;/g, '&')
+    : text
   const wiUrl = (id) => `${wit}/_workitems/edit/${id}`
   const getWi = (id) => api('GET', `${wit}/_apis/wit/workitems/${id}?$expand=relations&api-version=7.2-preview.3`)
   const wiComments = async (id) => {
@@ -447,11 +451,11 @@ function makeAdo(ctx) {
       const page = await api('GET', `${wit}/_apis/wit/workItems/${id}/comments?api-version=7.2-preview.4${token2 ? `&continuationToken=${encodeURIComponent(token2)}` : ''}`)
       for (const c of page.comments) {
         if (c.isDeleted) continue
-        out.push({ id: String(c.id), author: person(c.createdBy), ...(await classify(c.createdBy)), body: c.text ?? '', bodyFormat: String(c.format ?? 'html').toLowerCase(), createdAt: c.createdDate, url: `${wiUrl(id)}#${c.id}` })
+        out.push({ id: String(c.id), author: person(c.createdBy), ...(await classify(c.createdBy)), body: fromWit(c.text ?? '', c.format ?? 'html'), bodyFormat: String(c.format ?? 'html').toLowerCase(), createdAt: c.createdDate, url: `${wiUrl(id)}#${c.id}` })
       }
       token2 = page.continuationToken
     } while (token2)
-    return out
+    return out.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
   }
   const patchWi = (id, ops) => api('PATCH', `${wit}/_apis/wit/workitems/${id}?api-version=7.2-preview.3`, ops, 'application/json-patch+json')
   const prUrl = async (id) => `${proj}/_git/${encodeURIComponent((await getRepo()).name)}/pullrequest/${id}`
@@ -503,7 +507,7 @@ function makeAdo(ctx) {
       const f = w.fields
       const parentRel = (w.relations ?? []).find((r) => r.rel === 'System.LinkTypes.Hierarchy-Reverse')
       return {
-        number: w.id, title: f['System.Title'], body: f['System.Description'] ?? '', bodyFormat: String(w.multilineFieldsFormat?.['System.Description'] ?? 'html').toLowerCase(),
+        number: w.id, title: f['System.Title'], body: fromWit(f['System.Description'] ?? '', w.multilineFieldsFormat?.['System.Description'] ?? 'html'), bodyFormat: String(w.multilineFieldsFormat?.['System.Description'] ?? 'html').toLowerCase(),
         state: await normState(f['System.WorkItemType'], f['System.State']), rawState: f['System.State'], type: f['System.WorkItemType'],
         labels: tags(f['System.Tags']), assignees: f['System.AssignedTo'] ? [f['System.AssignedTo'].uniqueName] : [], milestone: f['System.IterationPath'] ?? null,
         parent: parentRel ? Number(parentRel.url.split('/').pop()) : null, author: person(f['System.CreatedBy']), createdAt: f['System.CreatedDate'], updatedAt: f['System.ChangedDate'], url: wiUrl(w.id),
@@ -515,7 +519,7 @@ function makeAdo(ctx) {
       if (ctx.config.requireParent && wiType === ctx.config.workItemType && parent === undefined) throw new HostError(`--parent is required: this repository files each ${wiType} under an existing ${ctx.config.parentType}`, 2)
       const ops = [
         { op: 'add', path: '/fields/System.Title', value: title },
-        { op: 'add', path: '/fields/System.Description', value: body },
+        { op: 'add', path: '/fields/System.Description', value: toWit(body) },
         { op: 'add', path: '/multilineFieldsFormat/System.Description', value: 'markdown' },
       ]
       if (labels.length) ops.push({ op: 'add', path: '/fields/System.Tags', value: labels.join('; ') })
@@ -534,7 +538,7 @@ function makeAdo(ctx) {
       const ops = [{ op: 'test', path: '/rev', value: w.rev }]
       if (title !== undefined) ops.push({ op: 'add', path: '/fields/System.Title', value: title })
       if (body !== undefined) {
-        ops.push({ op: 'add', path: '/fields/System.Description', value: body })
+        ops.push({ op: 'add', path: '/fields/System.Description', value: toWit(body) })
         ops.push({ op: 'add', path: '/multilineFieldsFormat/System.Description', value: 'markdown' })
       }
       if (addLabels.length || removeLabels.length) {
@@ -549,7 +553,7 @@ function makeAdo(ctx) {
       return { number: n, updated: true, rev: r.rev }
     },
     issueComment: async (n, body) => {
-      const c = await api('POST', `${wit}/_apis/wit/workItems/${n}/comments?format=markdown&api-version=7.2-preview.4`, { text: body })
+      const c = await api('POST', `${wit}/_apis/wit/workItems/${n}/comments?format=markdown&api-version=7.2-preview.4`, { text: toWit(body) })
       return { id: String(c.id), url: `${wiUrl(n)}#${c.id}` }
     },
     issueClose: async (n, reason) => {

@@ -7,6 +7,8 @@ description: Use when the user asks to fix a PR review and drive it to approval 
 
 Resolve the latest review with `fix-pr-review`, wait for the bot's re-review, repeat. This skill owns the step 3 stop rules and the step 5 table. `work-on-issue-loop` runs steps 2 to 4 and reuses step 5's table with deltas; edit its step 4 with that table.
 
+On Azure DevOps (`repo-host` context `host: ado`), `repo-host` section 4 replaces the review-trigger, wait, and fetch mechanics of this skill; every stop condition and validation rule here still applies.
+
 ## Input
 
 Nothing (the current branch's PR via `gh pr view`), or `#<N>` / `<N>` / URL / `owner/repo#N`.
