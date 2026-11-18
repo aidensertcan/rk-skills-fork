@@ -165,6 +165,36 @@ Copies the skills and workflow scripts into `~/.claude/`; add `--project` for th
 
 The plugin auto-discovers `skills/`, the `/commit` command, and `workflows/`, and auto-updates; `CLAUDE.md` is a reference only. Plugin workflows are namespaced, so the milestone script runs as `rk-skills:milestone-pipeline`. Restart Claude Code, then trigger any skill by name, e.g. `/fableplan <task>`. To install one skill, copy its whole `skills/<name>/` directory into `~/.claude/skills/<name>/`: some skills keep support files beside `SKILL.md`.
 
+## Install in GitHub Copilot CLI
+
+```
+copilot plugin marketplace add <path to your rk-skills clone>
+copilot plugin install rk-skills@rk-skills
+```
+
+Copilot CLI reads the `.claude-plugin` manifest as it is. A plugin installed from a local marketplace loads live from the clone, so a `git pull` takes effect in the next session with no update command. Copilot does not read this repository's `CLAUDE.md`; put the rules you want in every repository in `~/.copilot/copilot-instructions.md`. Every skill that touches issues or pull requests loads `copilot-harness` (the Claude Code to Copilot mapping) and `repo-host` (GitHub or Azure DevOps) first.
+
+Prerequisites: Node 18 or later; Git for Windows on Windows (skills run their bash snippets through Git Bash); `gh` for GitHub repositories; Azure CLI with the `azure-devops` extension and `az login` for Azure DevOps repositories; `jq` for some snippets. `milestone-workflow` needs Copilot dynamic workflows (experimental mode, an extension mode other than `disabled`, and usage-based billing).
+
+For an Azure DevOps repository, add an entry to `~/.rk-skills/config.json` (or commit `.rk-skills.json` at the repository root):
+
+```json
+{
+  "repos": {
+    "dev.azure.com/<org>/<project>/<repo>": {
+      "boardsProject": "<project that holds the work items>",
+      "areaPath": "<area path>",
+      "iterationPath": "<iteration path>",
+      "workItemType": "Task",
+      "parentType": "User Story",
+      "requireParent": true,
+      "branchPrefix": "feature/copilot-",
+      "trust": { "bots": ["<review bot identity id>"], "groups": ["<team name>"] },
+      "release": { "mode": "promotion-pr", "source": "main", "target": "prod", "completion": "merge commit, not squash" }
+    }
+  }
+}
+```
 ## License
 
 MIT, see [LICENSE](./LICENSE).
