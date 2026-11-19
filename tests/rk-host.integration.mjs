@@ -257,6 +257,23 @@ else {
     await check('ADO: list finds the Task in the configured area', () => {
       expect(ok(adoBoards, ['issue', 'list', '--state', 'open', '--search', TS]).some((i) => i.number === made.task), 'task not listed')
     })
+    await check('ADO: work item writes drop attribution footers and model tags', () => {
+      const attributed = [
+        `**Complexity: 62/100** — Capability 2 (Risk 3, Uncertainty 2 — persisted write); Volume 12 (Scope 2, Coupling 2, Verification 2) — Opus 5.5, high · plan: no`,
+        '', '## Problem', '', `Attribution test ${TS}. A plain --- rule stays:`, '', '---', '', 'End of body.',
+        '', '---', 'Created with LLM: Opus 5.5 | high | Harness: Copilot CLI', 'Validated with LLM: Fable 5.2 | high | Harness: Copilot CLI | fable-validate',
+      ].join('\n')
+      const clean = [
+        `**Complexity: 62/100** — Capability 2 (Risk 3, Uncertainty 2 — persisted write); Volume 12 (Scope 2, Coupling 2, Verification 2) · plan: no`,
+        '', '## Problem', '', `Attribution test ${TS}. A plain --- rule stays:`, '', '---', '', 'End of body.',
+      ].join('\n')
+      ok(adoBoards, ['issue', 'edit', String(made.task), '--body-file', body('attr.md', attributed)])
+      const v = ok(adoBoards, ['issue', 'view', String(made.task)]).body
+      expect(v === clean, `body:\n${v}`)
+      ok(adoBoards, ['issue', 'comment', String(made.task), '--body-file', body('attr-c.md', `## Implementation plan (Fable 5.2)\n\nPlan ${TS}\n\n---\nCreated with LLM: Fable 5.2 | high | Harness: Copilot CLI | fableplan`)])
+      const c = ok(adoBoards, ['issue', 'view', String(made.task), '--comments']).comments.at(-1).body
+      expect(c === `## Implementation plan\n\nPlan ${TS}`, `comment:\n${c}`)
+    })
     await check('ADO: Markdown with HTML-sensitive text round-trips exactly, comments oldest first', () => {
       const tricky = `A & B < C > D "E" 'F' literal-&amp; &quot; <b>x</b>\n\n> quote\n\n\`List<String> & <x> "q"\` ${TS}`
       ok(adoBoards, ['issue', 'edit', String(made.task), '--body-file', body('esc.md', tricky)])

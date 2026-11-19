@@ -449,6 +449,21 @@ function makeAdo(ctx) {
     return s && (s.category === 'Completed' || s.category === 'Removed') ? 'CLOSED' : 'OPEN'
   }
   const tags = (value) => (value ? value.split(';').map((t) => t.trim()).filter(Boolean) : [])
+  const MODEL_NAME = /\b(opus|sonnet|haiku|fable|sol|luna|gpt|codex|claude|cursor|gemini)\b/i
+  const unattributed = (text) => {
+    if (ctx.config.attribution) return text
+    const kept = text.replace(/\r\n?/g, '\n').split('\n')
+      .map((line) => line.replace(/^(#{2,3} (?:Implementation plan|Blocked plan))\s*\([^)]*\)\s*$/, '$1'))
+      .map((line, i) => (i < 3 && /^\*\*Complexity:/.test(line)
+        ? line.replace(/\s+—\s+([^—()]*?)(\s+·\s+(?:plan|fableplan):)/, (m, route, signal) => (MODEL_NAME.test(route) ? signal : m))
+        : line))
+    const lines = kept.filter((line) => !/^(Created|Updated|Validated|Reviewed) with LLM: .*\|.*Harness:/.test(line.trim()))
+    if (lines.length === kept.length) return lines.join('\n')
+    while (lines.length && !lines.at(-1).trim()) lines.pop()
+    if (lines.length && lines.at(-1).trim() === '---') lines.pop()
+    while (lines.length && !lines.at(-1).trim()) lines.pop()
+    return lines.join('\n')
+  }
   const toWit = (text) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;')
   const fromWit = (text, format) => String(format).toLowerCase() === 'markdown'
     ? text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&#x27;/g, "'").replace(/&amp;/g, '&')
@@ -530,7 +545,7 @@ function makeAdo(ctx) {
       if (ctx.config.requireParent && wiType === ctx.config.workItemType && parent === undefined) throw new HostError(`--parent is required: this repository files each ${wiType} under an existing ${ctx.config.parentType}`, 2)
       const ops = [
         { op: 'add', path: '/fields/System.Title', value: title },
-        { op: 'add', path: '/fields/System.Description', value: toWit(body) },
+        { op: 'add', path: '/fields/System.Description', value: toWit(unattributed(body)) },
         { op: 'add', path: '/multilineFieldsFormat/System.Description', value: 'markdown' },
       ]
       if (labels.length) ops.push({ op: 'add', path: '/fields/System.Tags', value: labels.join('; ') })
@@ -549,7 +564,7 @@ function makeAdo(ctx) {
       const ops = [{ op: 'test', path: '/rev', value: w.rev }]
       if (title !== undefined) ops.push({ op: 'add', path: '/fields/System.Title', value: title })
       if (body !== undefined) {
-        ops.push({ op: 'add', path: '/fields/System.Description', value: toWit(body) })
+        ops.push({ op: 'add', path: '/fields/System.Description', value: toWit(unattributed(body)) })
         ops.push({ op: 'add', path: '/multilineFieldsFormat/System.Description', value: 'markdown' })
       }
       if (addLabels.length || removeLabels.length) {
@@ -564,7 +579,7 @@ function makeAdo(ctx) {
       return { number: n, updated: true, rev: r.rev }
     },
     issueComment: async (n, body) => {
-      const c = await api('POST', `${wit}/_apis/wit/workItems/${n}/comments?format=markdown&api-version=7.2-preview.4`, { text: toWit(body) })
+      const c = await api('POST', `${wit}/_apis/wit/workItems/${n}/comments?format=markdown&api-version=7.2-preview.4`, { text: toWit(unattributed(body)) })
       return { id: String(c.id), url: `${wiUrl(n)}#${c.id}` }
     },
     issueClose: async (n, reason) => {
