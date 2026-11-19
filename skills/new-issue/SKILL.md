@@ -5,6 +5,8 @@ description: Use when the user says "new issue", "create an issue", "file an iss
 
 # new-issue
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 File a GitHub issue that a human or agent can pick up cold and implement correctly. Never file a placeholder, stub, or thin body; if it is not ready to spec, say so and track it in notes or a parent issue instead.
 
 Spec the best solution per the CLAUDE.md Engineering rules. When the cheap design and the correct design diverge, spec the correct one and let the score say so.

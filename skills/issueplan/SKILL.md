@@ -6,6 +6,8 @@ description: >-
 
 # issueplan
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 By default, a Plan subagent on the session's own model writes the plan. In in-session mode, the main agent writes it and uses no subagent. In both modes, the main agent checks the plan, posts it, and stops. This skill ends at the plan: it creates no worktree, edits no code, and opens no pull request. Follow the repository's Response Style, engineering, and attribution rules.
 
 ## Input

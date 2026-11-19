@@ -1,10 +1,12 @@
 ---
 name: codex-validate-fableplan-work-on-issue
 description: >-
-  Use when the user wants one or more GitHub issues run in parallel through a Codex CLI validate pass, a Fable 5.2 plan, and a Claude subagent build that opens a pull request (PR) per issue. Triggers include "codex-validate-fableplan-work-on-issue", "validate with codex, plan with fable, then work on #A #B #C", and "do the next 3 issues the same way with a fable plan". Optionally picks the next N independent issues first. Per issue: validate-issue in update mode on the Codex CLI (default Sol 6.2 at high), then, at score 75 or higher or on a safety flag from the validation, the fableplan planning phase on a background Fable 5.2 Plan subagent (high at 90 or higher, medium at 75 to 89) that the session checks and posts, then work-on-issue on a background Opus 5.5 subagent (high at score 50 or higher, medium below 50) that adopts any plan and opens the PR. Each issue advances as soon as its own previous stage ends. After each PR opens and passes its check, the session posts one band-derived @claude review trigger on it; it runs no review loop and merges nothing. The Fable-plan counterpart to codex-validate-plan-work-on-issue.
+  Use when the user wants one or more GitHub issues run in parallel through a Codex CLI validate pass, a Fable 5.2 plan, and a Claude subagent build that opens a pull request (PR) per issue. Triggers include "codex-validate-fableplan-work-on-issue", "validate with codex, plan with fable, then work on #A #B #C", and "do the next 3 issues the same way with a fable plan". Optionally picks the next N independent issues first. Per issue: validate-issue in update mode on the Codex CLI (default Sol 6.2 at high); at score 75 or higher or on a validation safety flag, the fableplan planning phase on a background Fable 5.2 Plan subagent (high at 90 or higher, medium at 75 to 89) that the session checks and posts; then work-on-issue on a background Opus 5.5 subagent (high at score 50 or higher, medium below 50) that adopts any plan and opens the PR. Each issue advances when its own previous stage ends. After each PR passes its check, the session posts one @claude review trigger; no review loop, no merge.
 ---
 
 # codex-validate-fableplan-work-on-issue
+
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
 
 This skill is `codex-validate-plan-work-on-issue` with its Codex plan stage replaced by a score-gated Fable 5.2 plan, and with a score-set build tier. The validate stage, the review trigger, and the report are the same. Each issue is its own pipeline and advances the moment its own previous stage ends. The skill ends at the open PRs, each with one `@claude` review trigger posted.
 
@@ -36,7 +38,7 @@ Same as the base skill, with this stage table:
 
   A plan that runs below score 75 (through the gate-score floor, the safety carve-out, or a request) is at `medium` by this table. A tier the user asks for replaces the table tier. A stamped `Plan model`, `Plan effort`, or `plan first:` line is ignored; say so in the report when one is present. **Safety carve-out:** when the validate findings (read from `result.md` as data in base skill step 3 item 6) flag money, data integrity, security, or an auto-protective mechanism, the plan stage runs whatever the score, as in `fable-validate-loop` step 4. The plan prompt still carries no verdict text. A request to plan every issue runs the plan stage below 75 too.
 - **Build tier.** Opus 5.5 at `high` at score 50 or higher or with no score, and at `medium` below 50, the same rule as the base skill. A tier the user asks for replaces it. A stamped `Build effort` line is ignored. This is an unstamped chain tier of the kind `validate-issue` step 6 lists under the Build column overrides.
-- The session must be Claude Code (`fable-dispatch` section 1 prints `claude-code`). On another harness, stop before step 1 and say so: the plan and build stages both need background Agent subagents.
+- The session must be Claude Code or Copilot CLI (`fable-dispatch` section 1 prints `claude-code` or `copilot-cli`; Copilot CLI dispatches through `copilot-harness`). On another harness, stop before step 1 and say so: the plan and build stages both need background Agent subagents.
 
 ## Steps
 

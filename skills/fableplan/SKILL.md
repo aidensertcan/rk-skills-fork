@@ -5,6 +5,8 @@ description: Use when the user wants a task planned by a Fable 5.2 planning suba
 
 # fableplan
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 A **Fable 5.2** Plan subagent writes the plan. The main agent checks it, posts it, and stops. Neither one builds: no worktree, no code edits, no pull request.
 
 ## Input

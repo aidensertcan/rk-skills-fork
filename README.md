@@ -60,7 +60,7 @@ Issues carry a **complexity score** (`C0` to `C100`) in the title and a `plan: y
 | `fable-new-issue-loop` | Runs `fable-new-issue`, then drives the issue to a reviewed PR. |
 | `fable-validate` | `validate-issue` run on a Fable 5.2 subagent; your session presents the verdict and acts on it. |
 | `fable-validate-loop` | Runs `fable-validate`, applies fixes, gets a Fable plan when score is 75 or higher, the code is safety-critical, or the issue stamps `plan first: Yes`, then drives to a reviewed PR. |
-| `fable-validate-fableplan-loop` | Same, with an unconditional Fable plan. On Claude Code, an Opus 5.5 subagent builds at `medium` effort below score 50 and `high` from 50; other harnesses use the session build. |
+| `fable-validate-fableplan-loop` | Same, with an unconditional Fable plan. On Claude Code or Copilot CLI, an Opus 5.5 subagent builds at `medium` effort below score 50 and `high` from 50; other harnesses use the session build. |
 | `fable-validate-fableplan` | Fable validates, fixes are applied, a Fable plan is posted, and it stops there. |
 | `validate-fableplan-loop` | Validates on the session's own model, brings in Fable for planning at score 75 or higher, when safety-flagged, or when the issue stamps `plan first: Yes`, then drives to a reviewed PR. |
 | `fableplan-work-on-issue` | Fable plans, `work-on-issue` builds and opens the PR. No validation, no review loop. |
@@ -69,6 +69,8 @@ Issues carry a **complexity score** (`C0` to `C100`) in the title and a `plan: y
 | `fable-orchestrate` | Runs on Fable 5.2: splits the task into worker specs, dispatches Sonnet 5.5 workers, reviews each result, integrates one branch, and gets a binding verdict from a fresh Fable 5.2 reviewer before opening the PR. |
 | `cli-dispatch` | Reference skill: how a build stamped on the Codex CLI or Cursor CLI reaches that CLI. Loaded by the Opus driver that `milestone-pipeline` dispatches for such an issue, and by the `codex-validate-plan-work-on-issue` and `codex-validate-fableplan-work-on-issue` sessions for their Codex validate pass. |
 | `fable-dispatch` | Reference skill: how every Fable skill reaches Fable 5.2 on the current harness, with the fallback ladder and its reporting. Loaded before any Fable subagent is dispatched. |
+| `copilot-harness` | Reference skill: how every rk-skills skill runs in GitHub Copilot CLI. Maps the Claude Code Agent tool to the Copilot `task` tool (agent type, model ID, effort, background mode), the other Claude tools, the `copilot/` branch prefix, the `Copilot CLI` harness name, Git Bash on Windows, and the served-model check. Loaded first in every Copilot CLI session. |
+| `repo-host` | Reference skill: the host layer for every issue and PR step. Detects GitHub or Azure DevOps from the git remote and maps each `gh` command to the bundled `rk-host.mjs`, which returns one JSON shape on both hosts with trust fields on every comment. On Azure DevOps, issues are Azure Boards work items under a required parent User Story, and `gh` is never called. Settings: `.rk-skills.json` or `~/.rk-skills/config.json`. Tests: `bun tests/rk-host.integration.mjs` (real `git`, `az`, and `gh`; set `RK_TEST_ADO_*` or `RK_TEST_GITHUB_*` to run a host suite). |
 
 ### Codex-driven skills
 
@@ -163,6 +165,44 @@ Copies the skills and workflow scripts into `~/.claude/`; add `--project` for th
 
 The plugin auto-discovers `skills/`, the `/commit` command, and `workflows/`, and auto-updates; `CLAUDE.md` is a reference only. Plugin workflows are namespaced, so the milestone script runs as `rk-skills:milestone-pipeline`. Restart Claude Code, then trigger any skill by name, e.g. `/fableplan <task>`. To install one skill, copy its whole `skills/<name>/` directory into `~/.claude/skills/<name>/`: some skills keep support files beside `SKILL.md`.
 
+## Install in GitHub Copilot CLI
+
+```
+copilot plugin marketplace add <path to your rk-skills clone>
+copilot plugin install rk-skills@rk-skills
+```
+
+Copilot CLI reads the `.claude-plugin` manifest as it is. A plugin installed from a local marketplace loads live from the clone, so a `git pull` takes effect in the next session with no update command. Copilot does not read this repository's `CLAUDE.md`; put the rules you want in every repository in `~/.copilot/copilot-instructions.md`. Every skill that touches issues or pull requests loads `copilot-harness` (the Claude Code to Copilot mapping) and `repo-host` (GitHub or Azure DevOps) first.
+
+Prerequisites: Node 18 or later; Git for Windows on Windows (skills run their bash snippets through Git Bash); `gh` for GitHub repositories; Azure CLI with the `azure-devops` extension and `az login` for Azure DevOps repositories; `jq` for some snippets. `milestone-workflow` needs Copilot dynamic workflows (experimental mode, an extension mode other than `disabled`, and usage-based billing).
+
+For an Azure DevOps repository, add an entry to `~/.rk-skills/config.json` (or commit `.rk-skills.json` at the repository root on the default branch; `rk-host` reads it from `origin/HEAD` only):
+
+```json
+{
+  "repos": {
+    "dev.azure.com/<org>/<project>/<repo>": {
+      "boardsProject": "<project that holds the work items>",
+      "areaPath": "<area path>",
+      "iterationPath": "<iteration path>",
+      "workItemType": "Task",
+      "parentType": "User Story",
+      "requireParent": true,
+      "branchPrefix": "feature/copilot-",
+      "trust": { "bots": ["<review bot identity id>"], "groups": ["<team name>"] },
+      "release": { "mode": "promotion-pr", "source": "main", "target": "prod", "completion": "merge commit, not squash" }
+    }
+  }
+}
+```
+### Keep a fork in sync with upstream
+
+The Copilot and Azure DevOps support lives in new files (`skills/copilot-harness`, `skills/repo-host`, `tests/`) plus one host line near the top of each skill that runs `gh`, so upstream merges rarely conflict. To sync:
+
+1. `git remote add upstream https://github.com/richkuo/rk-skills.git` (once), then `git fetch upstream` and merge `upstream/main` in a worktree.
+2. Run `bun bin/check-skills.mjs`. It fails when a skill that runs `gh` lacks the host line (copy the `**Host and harness:**` line from any skill under its H1) and when a description passes Copilot CLI's 1024-character limit.
+3. Run `bun tests/rk-host.integration.mjs` with the `RK_TEST_*` variables for the hosts you use.
+4. Review any upstream change to `fable-dispatch` section 1, `fable-validate-fableplan-loop` step 5, the review-loop skills, or `create-release`: those carry Copilot and Azure DevOps edits.
 ## License
 
 MIT, see [LICENSE](./LICENSE).

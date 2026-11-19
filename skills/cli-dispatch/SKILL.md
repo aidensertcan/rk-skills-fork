@@ -5,6 +5,8 @@ description: Required dispatch procedure for running a build, fix pass, or valid
 
 # CLI dispatch
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 For an issue stamped `Build model: <Name> (Codex CLI)` or `<Name> (Cursor CLI)`. The caller owns the task prompt and the result. Never fall back to a Claude build. A run on another model is a substitution: always report it and never present it as the stamped build.
 
 ## 1. Preflight

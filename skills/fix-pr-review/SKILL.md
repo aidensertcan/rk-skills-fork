@@ -5,7 +5,11 @@ description: Use when the user asks to fix, address, or respond to a PR review â
 
 # fix-pr-review
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Autonomously resolve every unaddressed review finding: validate, fix or refute, implement judgment calls and optional improvements, request re-review. Never stop to ask the user. The review is a hypothesis: change nothing before step 4 traces it.
+
+On Azure DevOps (`repo-host` context `host: ado`), `repo-host` section 4 replaces the review-trigger, wait, and fetch mechanics of this skill; every stop condition and validation rule here still applies.
 
 ## Input
 

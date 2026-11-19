@@ -5,6 +5,8 @@ description: Use when the user wants a GitHub issue validated by a Fable 5.2 sub
 
 # fable-validate
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Delegate issue validation to a **Fable 5.2** subagent, then act on its verdict in the main agent. The subagent only validates — it never edits files or the issue; the main agent handles all follow-on actions.
 
 ## Input

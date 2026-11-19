@@ -6,6 +6,8 @@ description: >-
 
 # fableplan-loop
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Chain fableplan → work-on-issue-loop into one autonomous run: Fable 5.2 plans the implementation for a GitHub issue (plan posted to the issue), then work-on-issue-loop implements that plan in an isolated worktree, opens a PR that closes the issue, and drives the PR through `@claude` review to convergence.
 
 It has no `validate-issue` step, no update-issue edits, and no score gate: fableplan always runs.

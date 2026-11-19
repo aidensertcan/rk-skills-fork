@@ -6,6 +6,8 @@ description: >-
 
 # codex-validate-plan-work-on-issue
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Run validate, plan, and build for one or more issues at the same time. Each issue is its own pipeline and advances the moment its own previous stage ends, whatever the other issues are doing. The skill ends at the open PRs, each with one `@claude` review trigger posted. It waits for no review and fixes nothing. `fix-pr-review-loop` drives a PR through review.
 
 Report length, wording, and formatting follow the Response Style section of CLAUDE.md/AGENTS.md. This skill restates none of it.

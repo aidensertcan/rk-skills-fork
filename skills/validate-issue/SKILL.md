@@ -5,6 +5,8 @@ description: Use when the user asks to validate, review, or check a GitHub issue
 
 # validate-issue
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Validate every current-behavior claim against code. Input: issue URL, `#N`, `N`, or `owner/repo#N`; else the issue named, validated, planned, or filed this session, else stop and ask. Never pick an issue from a list. `{ issue: <N>, targetBranch?: "<branch>" }` (or prose "target branch <name>") names the merge target, which replaces the default branch in step 0.
 
 ### 0. Baseline branch

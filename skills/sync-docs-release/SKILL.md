@@ -5,6 +5,8 @@ description: Use when the user wants to sync docs and then cut a release in one 
 
 # sync-docs-release
 
+**Host and harness:** before the first issue or pull request step, load the `repo-host` skill; on Azure DevOps it replaces every `gh` step. In GitHub Copilot CLI, load the `copilot-harness` skill first.
+
 Runs three operations in strict sequence, all in the main session. Do not skip steps or reorder them, and do not delegate any step to a subagent.
 
 ## Step 1 — Sync docs
